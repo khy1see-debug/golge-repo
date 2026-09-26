@@ -147,6 +147,8 @@ class JuraTempest : ParsedHttpSource() {
         return result
     }
 
+    override fun mangaDetailsParse(document: Document): SManga = throw UnsupportedOperationException()
+
     // ---------- Chapters ----------
     // Sayfa yalnızca son 10 bölümü SSR ile basıyor; tamamı oRPC'den gelir.
 
@@ -216,8 +218,11 @@ class JuraTempest : ParsedHttpSource() {
             return pages.mapIndexed { index, url -> Page(index, "", url) }
         }
 
-        return super.pageListParse(Jsoup.parse(body))
+        return Jsoup.parse(body).select("img[src*=\"cdn.juratempe.st\"]")
+            .mapIndexed { index, element -> Page(index, "", element.absUrl("src")) }
     }
+
+    override fun pageListParse(document: Document): List<Page> = throw UnsupportedOperationException()
 
     override fun imageUrlParse(document: Document): String = throw UnsupportedOperationException()
 }

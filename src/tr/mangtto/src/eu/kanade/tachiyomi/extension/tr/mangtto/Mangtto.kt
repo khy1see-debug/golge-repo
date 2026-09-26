@@ -166,6 +166,8 @@ class Mangtto : HttpSource() {
         }
     }
 
+    override fun imageUrlParse(response: Response): String = throw UnsupportedOperationException()
+
     private fun skipOf(response: Response): Int =
         response.request.url.queryParameter("skip")?.toIntOrNull() ?: 0
 }
