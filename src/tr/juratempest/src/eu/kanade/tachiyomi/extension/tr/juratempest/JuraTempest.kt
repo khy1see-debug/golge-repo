@@ -117,6 +117,7 @@ class JuraTempest : ParsedHttpSource() {
     override fun searchMangaSelector(): String = throw UnsupportedOperationException()
     override fun searchMangaFromElement(element: Element): SManga = throw UnsupportedOperationException()
     override fun searchMangaNextPageSelector(): String? = null
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw UnsupportedOperationException()
 
     // ---------- Details ----------
 
