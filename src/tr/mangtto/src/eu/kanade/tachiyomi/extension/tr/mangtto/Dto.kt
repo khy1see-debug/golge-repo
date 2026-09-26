@@ -79,11 +79,12 @@ class MangttoGenre(val name: String = "")
 class MangttoChapterPageData(
     val chapters: List<MangttoChapter> = emptyList(),
     val total: Int = 0,
+    val skip: Int = 0,
+    val take: Int = 20,
 )
 
 @Serializable
 class MangttoChapter(
-    val id: String? = null,
     val chapter: Float = 0f,
 ) {
     fun toSChapter(mangaSlug: String): SChapter = SChapter.create().apply {

@@ -231,7 +231,10 @@ class GolgeBahcesi : HttpSource() {
         }
 
         if (pages.isEmpty() && pagesArr.length() > 0) {
-            throw Exception("Bu bölüm site tarafından şifrelenmiştir (DRM). Sağ üstteki Dünya/Web simgesine basarak web görünümünde okuyabilirsiniz.")
+            throw Exception(
+                "Bu bölüm site tarafından şifrelenmiş (deliverySystem=secure). " +
+                    "Sayfalar yalnızca sitedeki WebAssembly çözücüyle açılıyor, API düz resim vermiyor.",
+            )
         }
 
         return pages
