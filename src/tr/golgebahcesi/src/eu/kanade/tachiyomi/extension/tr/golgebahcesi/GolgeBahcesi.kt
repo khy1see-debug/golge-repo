@@ -37,9 +37,8 @@ class GolgeBahcesi : HttpSource() {
         .build()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
-        .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
+        .add("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1")
         .add("Referer", "$baseUrl/")
-        .add("Origin", baseUrl)
 
     // Popular Manga
     override fun popularMangaRequest(page: Int): Request {

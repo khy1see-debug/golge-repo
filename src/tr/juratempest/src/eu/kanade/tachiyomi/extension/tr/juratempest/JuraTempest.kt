@@ -49,15 +49,16 @@ class JuraTempest : ParsedHttpSource() {
     // /api/rpc/* is behind a Cloudflare rule that only lets same-origin XHR through.
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
         .add("Referer", "$baseUrl/")
-        .add("Origin", baseUrl)
-        .add("Sec-Fetch-Site", "same-origin")
 
     // ---------- oRPC helper ----------
 
     private fun rpc(path: String, payload: String = "{}"): Request =
         POST(
             "$baseUrl/api/rpc/$path",
-            headers,
+            headers.newBuilder()
+                .add("Origin", baseUrl)
+                .add("Sec-Fetch-Site", "same-origin")
+                .build(),
             payload.toRequestBody("application/json".toMediaType()),
         )
 
@@ -71,13 +72,13 @@ class JuraTempest : ParsedHttpSource() {
 
     override fun popularMangaRequest(page: Int): Request = GET(baseUrl, headers)
 
-    override fun popularMangaSelector(): String = "a[class~=\"group/card\"][href^=\"/explore/\"]:has(img)"
+    override fun popularMangaSelector(): String = "a[href^=\"/explore/\"]:has(img)"
 
     override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
-        url = explorePath(element.attr("href"))
+        val href = element.attr("href")
+        url = href.split("/").take(3).joinToString("/")
         val img = element.selectFirst("img")
-        title = img?.attr("alt")?.takeIf { it.isNotBlank() }
-            ?: element.attr("aria-label").removeSuffix(" sayfasını aç").trim()
+        title = img?.attr("alt")?.takeIf { it.isNotBlank() } ?: element.text().trim()
         thumbnail_url = img?.absUrl("src")
     }
 
@@ -98,26 +99,31 @@ class JuraTempest : ParsedHttpSource() {
     override fun latestUpdatesFromElement(element: Element): SManga = throw UnsupportedOperationException()
     override fun latestUpdatesNextPageSelector(): String? = null
 
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request =
+        popularMangaRequest(page)
+
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
-        val q = query.trim()
-        // Arama uç noktası en az 3 karakter istiyor; aksi halde 400 döner.
-        if (q.length < MIN_QUERY_LENGTH) return Observable.just(MangasPage(emptyList(), false))
-        val offset = (page - 1) * SEARCH_LIMIT
-        val payload = """{"json":{"q":${json.encodeToString(q)},"limit":$SEARCH_LIMIT,"offset":$offset}}"""
-        return client.newCall(rpc("search/manga", payload))
+        return client.newCall(searchMangaRequest(page, query, filters))
             .asObservableSuccess()
             .map { response ->
-                val result = decode<JtSearchResult>(response.body?.string().orEmpty())
-                val mangas = result?.hits.orEmpty().map { it.toSManga() }.distinctBy { it.url }
-                val hasNextPage = offset + mangas.size < (result?.estimatedTotalHits ?: 0)
-                MangasPage(mangas, hasNextPage)
+                val document = response.asJsoup()
+                val q = query.lowercase().trim()
+                val mangas = document.select(popularMangaSelector())
+                    .map { popularMangaFromElement(it) }
+                    .distinctBy { it.url }
+
+                val filtered = if (q.isNotEmpty()) {
+                    mangas.filter { it.title.lowercase().contains(q) }
+                } else {
+                    mangas
+                }
+                MangasPage(filtered, false)
             }
     }
 
     override fun searchMangaSelector(): String = throw UnsupportedOperationException()
     override fun searchMangaFromElement(element: Element): SManga = throw UnsupportedOperationException()
     override fun searchMangaNextPageSelector(): String? = null
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request = throw UnsupportedOperationException()
 
     // ---------- Details ----------
 

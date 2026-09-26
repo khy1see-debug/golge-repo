@@ -12,8 +12,8 @@ android {
         applicationId = "eu.kanade.tachiyomi.extension.tr.golgebahcesi"
         minSdk = 26
         targetSdk = 34
-        versionCode = 140008
-        versionName = "1.4.8"
+        versionCode = 140009
+        versionName = "1.4.9"
     }
 
     signingConfigs {
