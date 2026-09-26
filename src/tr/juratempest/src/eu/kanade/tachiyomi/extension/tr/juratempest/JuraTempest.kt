@@ -106,7 +106,7 @@ class JuraTempest : ParsedHttpSource() {
         return client.newCall(searchMangaRequest(page, query, filters))
             .asObservableSuccess()
             .map { response ->
-                val document = response.asJsoup()
+                val document = Jsoup.parse(response.body?.string().orEmpty(), baseUrl)
                 val q = query.lowercase().trim()
                 val mangas = document.select(popularMangaSelector())
                     .map { popularMangaFromElement(it) }
