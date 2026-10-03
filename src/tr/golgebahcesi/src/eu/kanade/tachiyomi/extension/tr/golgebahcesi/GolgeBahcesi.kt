@@ -279,12 +279,7 @@ class GolgeBahcesi : HttpSource() {
         } || json.optBoolean("imageEnc", false) || json.optString("deliverySystem") == "secure"
 
         if (hasEncryptedPages) {
-            throw Exception(
-                "Bu bölüm Gölge Bahçesi tarafından WebAssembly ile şifrelenmiştir.
-
-" +
-                "Bölümü okumak için lütfen sağ üstteki WebView (küre) simgesine dokunun."
-            )
+            throw Exception("Bu bölüm site tarafından yeni sistemle (WebAssembly) şifrelenmiştir. Lütfen sağ üstteki WebView (küre) simgesiyle açarak okuyun.")
         }
 
         val skycdnBase = "https://c2.skycdn.online"
