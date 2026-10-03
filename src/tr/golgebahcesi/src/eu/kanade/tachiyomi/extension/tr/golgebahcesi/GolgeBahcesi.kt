@@ -1,6 +1,8 @@
 package eu.kanade.tachiyomi.extension.tr.golgebahcesi
 
+import android.webkit.CookieManager
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.interceptor.rateLimit
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -9,6 +11,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -25,13 +28,45 @@ class GolgeBahcesi : HttpSource() {
     override val lang = "tr"
     override val supportsLatest = true
 
+    private val cookieSyncInterceptor = Interceptor { chain ->
+        val originalRequest = chain.request()
+        val requestBuilder = originalRequest.newBuilder()
+
+        try {
+            val cookieManager = CookieManager.getInstance()
+            val mainCookies = cookieManager.getCookie(baseUrl)
+            if (!mainCookies.isNullOrBlank()) {
+                val existingCookie = originalRequest.header("Cookie")
+                val mergedCookies = if (existingCookie.isNullOrBlank()) {
+                    mainCookies
+                } else {
+                    "$existingCookie; $mainCookies"
+                }
+                requestBuilder.header("Cookie", mergedCookies)
+            }
+        } catch (_: Exception) {
+            // Ignore if CookieManager not available
+        }
+
+        val response = chain.proceed(requestBuilder.build())
+
+        if (response.code == 403) {
+            val bodyString = response.peekBody(1024).string()
+            if (bodyString.contains("challenge") || bodyString.contains("turnstile") || bodyString.contains("Just a moment")) {
+                throw Exception("Cloudflare doğrulaması gerekiyor. Lütfen seriyi WebView (küre simgesi) ile açıp doğrulamayı tamamlayın.")
+            }
+        }
+
+        response
+    }
+
     override val client = network.cloudflareClient.newBuilder()
+        .addInterceptor(cookieSyncInterceptor)
+        .rateLimit(2)
         .build()
 
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
-        .add("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1")
         .add("Referer", "$baseUrl/")
-        .add("Origin", baseUrl)
 
     // Popular Manga
     override fun popularMangaRequest(page: Int): Request {
