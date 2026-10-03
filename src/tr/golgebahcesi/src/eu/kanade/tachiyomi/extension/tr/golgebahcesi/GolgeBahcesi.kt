@@ -69,19 +69,19 @@ class GolgeBahcesi : HttpSource() {
         .add("Referer", "$baseUrl/")
 
     private fun getSeriesSlug(url: String): String {
-        val cleaned = url.trim().trim('/')
+        val cleanUrl = url.substringBefore('?').substringBefore('#').trim().trim('/')
         val extracted = when {
-            cleaned.contains("/manga/") -> cleaned.substringAfterLast("/manga/")
-            cleaned.contains("/series/") -> cleaned.substringAfterLast("/series/")
-            cleaned.startsWith("manga/") -> cleaned.removePrefix("manga/")
-            cleaned.startsWith("series/") -> cleaned.removePrefix("series/")
-            else -> cleaned
+            cleanUrl.contains("/manga/") -> cleanUrl.substringAfterLast("/manga/")
+            cleanUrl.contains("/series/") -> cleanUrl.substringAfterLast("/series/")
+            cleanUrl.startsWith("manga/") -> cleanUrl.removePrefix("manga/")
+            cleanUrl.startsWith("series/") -> cleanUrl.removePrefix("series/")
+            else -> cleanUrl
         }
         return extracted.substringBefore('/')
     }
 
     private fun getChapterIdentifier(url: String): String {
-        val parts = url.trim().trim('/').split('/')
+        val parts = url.substringBefore('?').substringBefore('#').trim().trim('/').split('/')
         val idPart = parts.firstOrNull { it.length == 24 && it.all { c -> c.isDigit() || c in 'a'..'f' || c in 'A'..'F' } }
         return idPart ?: parts.lastOrNull() ?: url.trim('/')
     }
@@ -243,11 +243,14 @@ class GolgeBahcesi : HttpSource() {
     }
 
     override fun getChapterUrl(chapter: SChapter): String {
-        val parts = chapter.url.trim('/').split('/')
-        return if (parts.size >= 2) {
-            val series = parts[0]
-            val slug = parts[1]
+        val parts = chapter.url.substringBefore('?').substringBefore('#').trim('/').split('/')
+        val nonIdParts = parts.filterNot { it.length == 24 && it.all { c -> c.isDigit() || c in 'a'..'f' || c in 'A'..'F' } }
+        return if (nonIdParts.size >= 2) {
+            val series = nonIdParts[0]
+            val slug = nonIdParts[1]
             "$baseUrl/manga/$series/bolum/$slug"
+        } else if (parts.size >= 2) {
+            "$baseUrl/manga/${parts[0]}/bolum/${parts[1]}"
         } else {
             baseUrl
         }
@@ -262,6 +265,27 @@ class GolgeBahcesi : HttpSource() {
     override fun pageListParse(response: Response): List<Page> {
         val json = JSONObject(response.body?.string().orEmpty())
         val pagesArr = json.optJSONArray("pages") ?: return emptyList()
+
+        val seriesSlug = json.optString("seriesSlug")
+        val chapterSlug = json.optString("slug")
+        val chapterWebUrl = if (seriesSlug.isNotBlank() && chapterSlug.isNotBlank()) {
+            "$baseUrl/manga/$seriesSlug/bolum/$chapterSlug"
+        } else {
+            baseUrl
+        }
+
+        val hasEncryptedPages = (0 until pagesArr.length()).any {
+            pagesArr.getJSONObject(it).optString("url").endsWith(".enc")
+        } || json.optBoolean("imageEnc", false) || json.optString("deliverySystem") == "secure"
+
+        if (hasEncryptedPages) {
+            throw Exception(
+                "Bu bölüm Gölge Bahçesi tarafından WebAssembly ile şifrelenmiştir.
+
+" +
+                "Bölümü okumak için lütfen sağ üstteki WebView (küre) simgesine dokunun."
+            )
+        }
 
         val skycdnBase = "https://c2.skycdn.online"
         val pages = mutableListOf<Page>()
@@ -278,7 +302,7 @@ class GolgeBahcesi : HttpSource() {
                 else -> "$skycdnBase/$rawUrl"
             }
 
-            pages.add(Page(pages.size, "", fullUrl))
+            pages.add(Page(pages.size, chapterWebUrl, fullUrl))
         }
 
         if (pages.isEmpty() && pagesArr.length() > 0) {
