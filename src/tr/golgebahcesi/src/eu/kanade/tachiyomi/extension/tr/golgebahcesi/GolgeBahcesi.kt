@@ -9,7 +9,6 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -17,28 +16,22 @@ import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
-import java.util.concurrent.TimeUnit
 
 class GolgeBahcesi : HttpSource() {
 
     override val name = "Gölge Bahçesi"
-
     override val baseUrl = "https://golgebahcesi.com"
-
     private val apiBaseUrl = "https://api.golgebahcesi.com/api"
-
     override val lang = "tr"
-
     override val supportsLatest = true
 
-    override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
+    override val client = network.cloudflareClient.newBuilder()
         .build()
 
-    override fun headersBuilder(): Headers.Builder = Headers.Builder()
+    override fun headersBuilder(): Headers.Builder = super.headersBuilder()
         .add("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1")
         .add("Referer", "$baseUrl/")
+        .add("Origin", baseUrl)
 
     // Popular Manga
     override fun popularMangaRequest(page: Int): Request {
@@ -156,7 +149,6 @@ class GolgeBahcesi : HttpSource() {
         for (i in 0 until arr.length()) {
             val ch = arr.getJSONObject(i)
 
-            // D-LOCKED-CHAPTERS: Yalnızca açık (ücretsiz) bölümler listelenir
             val isLocked = ch.optBoolean("isLocked", false)
             if (isLocked) continue
 
@@ -166,9 +158,7 @@ class GolgeBahcesi : HttpSource() {
             if (chapterId.isBlank()) continue
 
             val chapter = SChapter.create().apply {
-                // Store slugs and ID: /<seriesSlug>/<chapterSlug>/<chapterId>
                 url = "/$seriesSlug/$chapterSlug/$chapterId"
-
                 name = ch.optString("title").ifBlank { "Bölüm ${ch.optDouble("number", 0.0)}" }
                 chapter_number = ch.optDouble("number", 0.0).toFloat()
 
@@ -201,7 +191,7 @@ class GolgeBahcesi : HttpSource() {
         }
     }
 
-    // Page List — use /api/chapters/<id> directly
+    // Page List - use /api/chapters/<id> directly
     override fun pageListRequest(chapter: SChapter): Request {
         val parts = chapter.url.trim('/').split('/')
         val chapterId = parts.lastOrNull() ?: ""
@@ -220,23 +210,26 @@ class GolgeBahcesi : HttpSource() {
             val rawUrl = pageObj.optString("url")
             if (rawUrl.isBlank()) continue
 
-            // URL may be relative (e.g. "/series/.../page.webp") or absolute
-            val fullUrl = if (rawUrl.startsWith("http")) rawUrl else "$skycdnBase$rawUrl"
-
-            // Skip encrypted files (.enc)
-            if (fullUrl.endsWith(".enc")) continue
+            val fullUrl = when {
+                rawUrl.startsWith("http://") || rawUrl.startsWith("https://") -> rawUrl
+                rawUrl.startsWith("//") -> "https:$rawUrl"
+                rawUrl.startsWith("/") -> "$skycdnBase$rawUrl"
+                else -> "$skycdnBase/$rawUrl"
+            }
 
             pages.add(Page(pages.size, "", fullUrl))
         }
 
         if (pages.isEmpty() && pagesArr.length() > 0) {
-            throw Exception(
-                "Bu bölüm site tarafından şifrelenmiş (deliverySystem=secure). " +
-                    "Sayfalar yalnızca sitedeki WebAssembly çözücüyle açılıyor, API düz resim vermiyor.",
-            )
+            throw Exception("Bu bölümde sayfa bulunamadı.")
         }
 
         return pages
+    }
+
+    override fun imageRequest(page: Page): Request {
+        val url = page.imageUrl?.takeIf { it.isNotBlank() } ?: page.url
+        return GET(url, headers)
     }
 
     override fun imageUrlParse(response: Response): String {
