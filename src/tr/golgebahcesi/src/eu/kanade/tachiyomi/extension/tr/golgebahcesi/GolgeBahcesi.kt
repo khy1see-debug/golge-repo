@@ -68,6 +68,24 @@ class GolgeBahcesi : HttpSource() {
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
         .add("Referer", "$baseUrl/")
 
+    private fun getSeriesSlug(url: String): String {
+        val cleaned = url.trim().trim('/')
+        val extracted = when {
+            cleaned.contains("/manga/") -> cleaned.substringAfterLast("/manga/")
+            cleaned.contains("/series/") -> cleaned.substringAfterLast("/series/")
+            cleaned.startsWith("manga/") -> cleaned.removePrefix("manga/")
+            cleaned.startsWith("series/") -> cleaned.removePrefix("series/")
+            else -> cleaned
+        }
+        return extracted.substringBefore('/')
+    }
+
+    private fun getChapterIdentifier(url: String): String {
+        val parts = url.trim().trim('/').split('/')
+        val idPart = parts.firstOrNull { it.length == 24 && it.all { c -> c.isDigit() || c in 'a'..'f' || c in 'A'..'F' } }
+        return idPart ?: parts.lastOrNull() ?: url.trim('/')
+    }
+
     // Popular Manga
     override fun popularMangaRequest(page: Int): Request {
         val url = "$apiBaseUrl/series".toHttpUrl().newBuilder()
@@ -120,8 +138,9 @@ class GolgeBahcesi : HttpSource() {
         val mangas = mutableListOf<SManga>()
         for (i in 0 until data.length()) {
             val obj = data.getJSONObject(i)
+            val slug = obj.optString("slug").ifBlank { obj.optString("id") }.trim('/')
             val manga = SManga.create().apply {
-                url = obj.optString("slug")
+                url = slug
                 title = obj.optString("title")
                 thumbnail_url = obj.optString("coverImage").takeIf { it.isNotBlank() }
             }
@@ -132,15 +151,21 @@ class GolgeBahcesi : HttpSource() {
     }
 
     // Manga Details
-    override fun getMangaUrl(manga: SManga): String = "$baseUrl/manga/${manga.url}"
+    override fun getMangaUrl(manga: SManga): String {
+        val slug = getSeriesSlug(manga.url)
+        return "$baseUrl/manga/$slug"
+    }
 
-    override fun mangaDetailsRequest(manga: SManga): Request =
-        GET("$apiBaseUrl/series/${manga.url}", headers)
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        val slug = getSeriesSlug(manga.url)
+        return GET("$apiBaseUrl/series/$slug", headers)
+    }
 
     override fun mangaDetailsParse(response: Response): SManga {
         val obj = JSONObject(response.body?.string().orEmpty())
         return SManga.create().apply {
-            url = obj.optString("slug")
+            val slug = obj.optString("slug").ifBlank { obj.optString("id") }.trim('/')
+            url = slug
             title = obj.optString("title")
             thumbnail_url = obj.optString("coverImage").takeIf { it.isNotBlank() }
             description = obj.optString("description").takeIf { it.isNotBlank() }
@@ -171,8 +196,10 @@ class GolgeBahcesi : HttpSource() {
     }
 
     // Chapter List
-    override fun chapterListRequest(manga: SManga): Request =
-        GET("$apiBaseUrl/series/${manga.url}/chapters", headers)
+    override fun chapterListRequest(manga: SManga): Request {
+        val slug = getSeriesSlug(manga.url)
+        return GET("$apiBaseUrl/series/$slug/chapters", headers)
+    }
 
     override fun chapterListParse(response: Response): List<SChapter> {
         val arr = JSONArray(response.body?.string().orEmpty())
@@ -228,9 +255,8 @@ class GolgeBahcesi : HttpSource() {
 
     // Page List - use /api/chapters/<id> directly
     override fun pageListRequest(chapter: SChapter): Request {
-        val parts = chapter.url.trim('/').split('/')
-        val chapterId = parts.lastOrNull() ?: ""
-        return GET("$apiBaseUrl/chapters/$chapterId", headers)
+        val chapterIdentifier = getChapterIdentifier(chapter.url)
+        return GET("$apiBaseUrl/chapters/$chapterIdentifier", headers)
     }
 
     override fun pageListParse(response: Response): List<Page> {
