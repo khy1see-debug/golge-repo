@@ -211,17 +211,35 @@ class GolgeBahcesi : HttpSource() {
         for (i in 0 until arr.length()) {
             val ch = arr.getJSONObject(i)
 
-            val isLocked = ch.optBoolean("isLocked", false)
-            if (isLocked) continue
-
             val seriesSlug = ch.optString("seriesSlug")
             val chapterSlug = ch.optString("slug")
             val chapterId = ch.optString("id")
             if (chapterId.isBlank()) continue
 
+            val isLocked = ch.optBoolean("isLocked", false)
+            val lockObj = ch.optJSONObject("lock")
+            val lockType = lockObj?.optString("type", "none") ?: "none"
+            val unlockAtStr = lockObj?.optString("unlockAt")
+
+            val isTimeUnlocked = if (!unlockAtStr.isNullOrBlank()) {
+                try {
+                    val cleanUnlock = if (unlockAtStr.length >= 19) unlockAtStr.substring(0, 19) else unlockAtStr
+                    dateFormat.parse(cleanUnlock)?.time?.let { System.currentTimeMillis() >= it } ?: false
+                } catch (_: Exception) {
+                    false
+                }
+            } else {
+                false
+            }
+
+            val isActuallyLocked = isLocked && lockType != "none" && !isTimeUnlocked
+
+            val rawTitle = ch.optString("title").ifBlank { "Bölüm ${ch.optDouble("number", 0.0)}" }
+            val chapterTitle = if (isActuallyLocked) "🔒 $rawTitle" else rawTitle
+
             val chapter = SChapter.create().apply {
                 url = "/$seriesSlug/$chapterSlug/$chapterId"
-                name = ch.optString("title").ifBlank { "Bölüm ${ch.optDouble("number", 0.0)}" }
+                name = chapterTitle
                 chapter_number = ch.optDouble("number", 0.0).toFloat()
 
                 val dateStr = ch.optString("releaseDate").ifBlank { ch.optString("createdAt") }
