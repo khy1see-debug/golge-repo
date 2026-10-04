@@ -82,8 +82,12 @@ class GolgeBahcesi : HttpSource() {
 
     private fun getChapterIdentifier(url: String): String {
         val parts = url.substringBefore('?').substringBefore('#').trim().trim('/').split('/')
+            .filterNot { it == "manga" || it == "bolum" }
         val idPart = parts.firstOrNull { it.length == 24 && it.all { c -> c.isDigit() || c in 'a'..'f' || c in 'A'..'F' } }
-        return idPart ?: parts.lastOrNull() ?: url.trim('/')
+        if (idPart != null) return idPart
+        val nonIdParts = parts.filterNot { it.length == 24 && it.all { c -> c.isDigit() || c in 'a'..'f' || c in 'A'..'F' } }
+        if (nonIdParts.size >= 2) return "${nonIdParts[0]}/${nonIdParts[1]}"
+        return parts.lastOrNull() ?: url.trim('/')
     }
 
     // Popular Manga
@@ -216,9 +220,7 @@ class GolgeBahcesi : HttpSource() {
             val chapterId = ch.optString("id")
             if (chapterId.isBlank()) continue
 
-            // Sadece doğrudan okunabilen şifresiz bölümleri listele; şifreli olanları atla
             val isEncrypted = ch.optBoolean("imageEnc", false) || ch.optString("deliverySystem") == "secure"
-            if (isEncrypted) continue
 
             val isLocked = ch.optBoolean("isLocked", false)
             val lockObj = ch.optJSONObject("lock")
@@ -237,13 +239,18 @@ class GolgeBahcesi : HttpSource() {
             }
 
             val isActuallyLocked = isLocked && lockType != "none" && !isTimeUnlocked
-            if (isActuallyLocked) continue
 
-            val chapterTitle = ch.optString("title").ifBlank { "Bölüm ${ch.optDouble("number", 0.0)}" }
+            val rawTitle = ch.optString("title").ifBlank { "Bölüm ${ch.optDouble("number", 0.0)}" }
+
+            val displayName = when {
+                isActuallyLocked -> "🔒 $rawTitle"
+                isEncrypted -> "🌐 [Web] $rawTitle"
+                else -> rawTitle
+            }
 
             val chapter = SChapter.create().apply {
                 url = "/$seriesSlug/$chapterSlug/$chapterId"
-                name = chapterTitle
+                name = displayName
                 chapter_number = ch.optDouble("number", 0.0).toFloat()
 
                 val dateStr = ch.optString("releaseDate").ifBlank { ch.optString("createdAt") }
@@ -266,6 +273,7 @@ class GolgeBahcesi : HttpSource() {
 
     override fun getChapterUrl(chapter: SChapter): String {
         val parts = chapter.url.substringBefore('?').substringBefore('#').trim('/').split('/')
+            .filterNot { it == "manga" || it == "bolum" }
         val nonIdParts = parts.filterNot { it.length == 24 && it.all { c -> c.isDigit() || c in 'a'..'f' || c in 'A'..'F' } }
         return if (nonIdParts.size >= 2) {
             val series = nonIdParts[0]
@@ -286,7 +294,7 @@ class GolgeBahcesi : HttpSource() {
 
     override fun pageListParse(response: Response): List<Page> {
         val json = JSONObject(response.body?.string().orEmpty())
-        val pagesArr = json.optJSONArray("pages") ?: return emptyList()
+        val pagesArr = json.optJSONArray("pages")
 
         val seriesSlug = json.optString("seriesSlug")
         val chapterSlug = json.optString("slug")
@@ -296,12 +304,24 @@ class GolgeBahcesi : HttpSource() {
             baseUrl
         }
 
-        val hasEncryptedPages = (0 until pagesArr.length()).any {
-            pagesArr.getJSONObject(it).optString("url").endsWith(".enc")
-        } || json.optBoolean("imageEnc", false) || json.optString("deliverySystem") == "secure"
+        val isLocked = json.optBoolean("isLocked", false)
+        val lockObj = json.optJSONObject("lock")
+        val lockType = lockObj?.optString("type", "none") ?: "none"
+        if (isLocked && lockType != "none") {
+            throw Exception("Bu bölüm sitede kilitlidir. Lütfen 'WebView ile aç' butonuna dokunarak siteden okuyun veya kilidi açın.")
+        }
 
-        if (hasEncryptedPages) {
-            throw Exception("Bu bölüm site tarafından yeni sistemle (WebAssembly) şifrelenmiştir. Lütfen sağ üstteki WebView (küre) simgesiyle açarak okuyun.")
+        val isEncrypted = json.optBoolean("imageEnc", false) || json.optString("deliverySystem") == "secure"
+        val hasEncryptedPages = pagesArr != null && (0 until pagesArr.length()).any {
+            pagesArr.getJSONObject(it).optString("url").endsWith(".enc")
+        }
+
+        if (isEncrypted || hasEncryptedPages) {
+            throw Exception("Bu bölüm site korumalıdır (WASM). Lütfen 'WebView ile aç' butonuna dokunarak doğrudan siteden okuyun.")
+        }
+
+        if (pagesArr == null || pagesArr.length() == 0) {
+            throw Exception("Bu bölümde sayfa bulunamadı.")
         }
 
         val skycdnBase = "https://c2.skycdn.online"
@@ -322,7 +342,7 @@ class GolgeBahcesi : HttpSource() {
             pages.add(Page(pages.size, chapterWebUrl, fullUrl))
         }
 
-        if (pages.isEmpty() && pagesArr.length() > 0) {
+        if (pages.isEmpty()) {
             throw Exception("Bu bölümde sayfa bulunamadı.")
         }
 
