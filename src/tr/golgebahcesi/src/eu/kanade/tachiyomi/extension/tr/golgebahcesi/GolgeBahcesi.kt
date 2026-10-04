@@ -82,7 +82,7 @@ class GolgeBahcesi : HttpSource() {
 
     private fun getChapterIdentifier(url: String): String {
         val parts = url.substringBefore('?').substringBefore('#').trim().trim('/').split('/')
-            .filterNot { it == "manga" || it == "bolum" }
+            .filterNot { it == "v3" || it == "v2" || it == "manga" || it == "bolum" || it == "series" }
         val idPart = parts.firstOrNull { it.length == 24 && it.all { c -> c.isDigit() || c in 'a'..'f' || c in 'A'..'F' } }
         if (idPart != null) return idPart
         val nonIdParts = parts.filterNot { it.length == 24 && it.all { c -> c.isDigit() || c in 'a'..'f' || c in 'A'..'F' } }
@@ -249,7 +249,8 @@ class GolgeBahcesi : HttpSource() {
             }
 
             val chapter = SChapter.create().apply {
-                url = "/$seriesSlug/$chapterSlug/$chapterId"
+                // v3 prefix ensures Mihon disk cache is invalidated for all previous chapters
+                url = "/v3/$seriesSlug/$chapterSlug/$chapterId"
                 name = displayName
                 chapter_number = ch.optDouble("number", 0.0).toFloat()
 
@@ -273,7 +274,7 @@ class GolgeBahcesi : HttpSource() {
 
     override fun getChapterUrl(chapter: SChapter): String {
         val parts = chapter.url.substringBefore('?').substringBefore('#').trim('/').split('/')
-            .filterNot { it == "manga" || it == "bolum" }
+            .filterNot { it == "v3" || it == "v2" || it == "manga" || it == "bolum" || it == "series" }
         val nonIdParts = parts.filterNot { it.length == 24 && it.all { c -> c.isDigit() || c in 'a'..'f' || c in 'A'..'F' } }
         return if (nonIdParts.size >= 2) {
             val series = nonIdParts[0]
@@ -308,20 +309,22 @@ class GolgeBahcesi : HttpSource() {
         val lockObj = json.optJSONObject("lock")
         val lockType = lockObj?.optString("type", "none") ?: "none"
         if (isLocked && lockType != "none") {
-            throw Exception("Bu bölüm sitede kilitlidir. Lütfen 'WebView ile aç' butonuna dokunarak siteden okuyun veya kilidi açın.")
+            return listOf(Page(0, chapterWebUrl, chapterWebUrl))
         }
 
         val isEncrypted = json.optBoolean("imageEnc", false) || json.optString("deliverySystem") == "secure"
         val hasEncryptedPages = pagesArr != null && (0 until pagesArr.length()).any {
-            pagesArr.getJSONObject(it).optString("url").endsWith(".enc")
+            pagesArr.getJSONObject(it).optString("url").contains(".enc")
         }
 
+        // Korumalı bölümlerde tek sayfa olarak chapterWebUrl verilir.
+        // Mihon okuyucusunda 'WebView ile aç' tıklandığında skycdn yerine doğrudan sitenin bölüm sayfası açılır!
         if (isEncrypted || hasEncryptedPages) {
-            throw Exception("Bu bölüm site korumalıdır (WASM). Lütfen 'WebView ile aç' butonuna dokunarak doğrudan siteden okuyun.")
+            return listOf(Page(0, chapterWebUrl, chapterWebUrl))
         }
 
         if (pagesArr == null || pagesArr.length() == 0) {
-            throw Exception("Bu bölümde sayfa bulunamadı.")
+            return listOf(Page(0, chapterWebUrl, chapterWebUrl))
         }
 
         val skycdnBase = "https://c2.skycdn.online"
@@ -330,7 +333,7 @@ class GolgeBahcesi : HttpSource() {
         for (i in 0 until pagesArr.length()) {
             val pageObj = pagesArr.getJSONObject(i)
             val rawUrl = pageObj.optString("url")
-            if (rawUrl.isBlank()) continue
+            if (rawUrl.isBlank() || rawUrl.contains(".enc")) continue
 
             val fullUrl = when {
                 rawUrl.startsWith("http://") || rawUrl.startsWith("https://") -> rawUrl
@@ -343,7 +346,7 @@ class GolgeBahcesi : HttpSource() {
         }
 
         if (pages.isEmpty()) {
-            throw Exception("Bu bölümde sayfa bulunamadı.")
+            return listOf(Page(0, chapterWebUrl, chapterWebUrl))
         }
 
         return pages
