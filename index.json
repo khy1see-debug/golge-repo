@@ -11,13 +11,13 @@
         "name": "G\u00f6lge Bah\u00e7esi",
         "packageName": "eu.kanade.tachiyomi.extension.tr.golgebahcesi",
         "resources": {
-          "apkUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/apk/tachiyomi-tr.golgebahcesi-v1.4.16.apk",
+          "apkUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/apk/tachiyomi-tr.golgebahcesi-v1.4.17.apk",
           "iconUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/icon/eu.kanade.tachiyomi.extension.tr.golgebahcesi.png",
-          "jarUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/jar/tachiyomi-tr.golgebahcesi-v1.4.16.jar"
+          "jarUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/jar/tachiyomi-tr.golgebahcesi-v1.4.17.jar"
         },
         "extensionLib": "1.4",
-        "versionCode": "140016",
-        "versionName": "1.4.16",
+        "versionCode": "140017",
+        "versionName": "1.4.17",
         "contentWarning": "CONTENT_WARNING_SAFE",
         "sources": [
           {
