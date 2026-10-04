@@ -216,6 +216,10 @@ class GolgeBahcesi : HttpSource() {
             val chapterId = ch.optString("id")
             if (chapterId.isBlank()) continue
 
+            // Sadece doğrudan okunabilen şifresiz bölümleri listele; şifreli olanları atla
+            val isEncrypted = ch.optBoolean("imageEnc", false) || ch.optString("deliverySystem") == "secure"
+            if (isEncrypted) continue
+
             val isLocked = ch.optBoolean("isLocked", false)
             val lockObj = ch.optJSONObject("lock")
             val lockType = lockObj?.optString("type", "none") ?: "none"
@@ -233,9 +237,9 @@ class GolgeBahcesi : HttpSource() {
             }
 
             val isActuallyLocked = isLocked && lockType != "none" && !isTimeUnlocked
+            if (isActuallyLocked) continue
 
-            val rawTitle = ch.optString("title").ifBlank { "Bölüm ${ch.optDouble("number", 0.0)}" }
-            val chapterTitle = if (isActuallyLocked) "🔒 $rawTitle" else rawTitle
+            val chapterTitle = ch.optString("title").ifBlank { "Bölüm ${ch.optDouble("number", 0.0)}" }
 
             val chapter = SChapter.create().apply {
                 url = "/$seriesSlug/$chapterSlug/$chapterId"
