@@ -1,9 +1,9 @@
 {
-  "index_v2": "https://raw.githubusercontent.com/songulysnkmsr-blip/tempestrepo/repo/index.pb",
+  "index_v2": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/index.pb",
   "meta": {
-    "name": "Tempest Repo",
-    "shortName": "TR",
-    "website": "https://github.com/songulysnkmsr-blip/tempestrepo",
+    "name": "Gölge Repo",
+    "shortName": "GR",
+    "website": "https://github.com/khy1see-debug/golge-repo",
     "signingKeyFingerprint": "01e252e0645243a25e8726a236f2305c00fab708a98384727fbb1cfc840a960f"
   }
 }

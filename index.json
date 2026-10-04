@@ -1,9 +1,9 @@
 {
-  "name": "Tempest Repo",
-  "badgeLabel": "TR",
+  "name": "G\u00f6lge Repo",
+  "badgeLabel": "GR",
   "signingKey": "01e252e0645243a25e8726a236f2305c00fab708a98384727fbb1cfc840a960f",
   "contact": {
-    "website": "https://github.com/songulysnkmsr-blip/tempestrepo"
+    "website": "https://github.com/khy1see-debug/golge-repo"
   },
   "extensionList": {
     "extensions": [
@@ -11,13 +11,13 @@
         "name": "G\u00f6lge Bah\u00e7esi",
         "packageName": "eu.kanade.tachiyomi.extension.tr.golgebahcesi",
         "resources": {
-          "apkUrl": "https://raw.githubusercontent.com/songulysnkmsr-blip/tempestrepo/repo/apk/tachiyomi-tr.golgebahcesi-v1.4.13.apk",
-          "iconUrl": "https://raw.githubusercontent.com/songulysnkmsr-blip/tempestrepo/repo/icon/eu.kanade.tachiyomi.extension.tr.golgebahcesi.png",
-          "jarUrl": "https://raw.githubusercontent.com/songulysnkmsr-blip/tempestrepo/repo/jar/tachiyomi-tr.golgebahcesi-v1.4.13.jar"
+          "apkUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/apk/tachiyomi-tr.golgebahcesi-v1.4.14.apk",
+          "iconUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/icon/eu.kanade.tachiyomi.extension.tr.golgebahcesi.png",
+          "jarUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/jar/tachiyomi-tr.golgebahcesi-v1.4.14.jar"
         },
         "extensionLib": "1.4",
-        "versionCode": "140013",
-        "versionName": "1.4.13",
+        "versionCode": "140014",
+        "versionName": "1.4.14",
         "contentWarning": "CONTENT_WARNING_SAFE",
         "sources": [
           {
@@ -32,9 +32,9 @@
         "name": "Jura Tempest",
         "packageName": "eu.kanade.tachiyomi.extension.tr.juratempest",
         "resources": {
-          "apkUrl": "https://raw.githubusercontent.com/songulysnkmsr-blip/tempestrepo/repo/apk/tachiyomi-tr.juratempest-v1.4.6.apk",
-          "iconUrl": "https://raw.githubusercontent.com/songulysnkmsr-blip/tempestrepo/repo/icon/eu.kanade.tachiyomi.extension.tr.juratempest.png",
-          "jarUrl": "https://raw.githubusercontent.com/songulysnkmsr-blip/tempestrepo/repo/jar/tachiyomi-tr.juratempest-v1.4.6.jar"
+          "apkUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/apk/tachiyomi-tr.juratempest-v1.4.6.apk",
+          "iconUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/icon/eu.kanade.tachiyomi.extension.tr.juratempest.png",
+          "jarUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/jar/tachiyomi-tr.juratempest-v1.4.6.jar"
         },
         "extensionLib": "1.4",
         "versionCode": "140006",
@@ -53,9 +53,9 @@
         "name": "Mangtto",
         "packageName": "eu.kanade.tachiyomi.extension.tr.mangtto",
         "resources": {
-          "apkUrl": "https://raw.githubusercontent.com/songulysnkmsr-blip/tempestrepo/repo/apk/tachiyomi-tr.mangtto-v1.4.7.apk",
-          "iconUrl": "https://raw.githubusercontent.com/songulysnkmsr-blip/tempestrepo/repo/icon/eu.kanade.tachiyomi.extension.tr.mangtto.png",
-          "jarUrl": "https://raw.githubusercontent.com/songulysnkmsr-blip/tempestrepo/repo/jar/tachiyomi-tr.mangtto-v1.4.7.jar"
+          "apkUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/apk/tachiyomi-tr.mangtto-v1.4.7.apk",
+          "iconUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/icon/eu.kanade.tachiyomi.extension.tr.mangtto.png",
+          "jarUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/jar/tachiyomi-tr.mangtto-v1.4.7.jar"
         },
         "extensionLib": "1.4",
         "versionCode": "140007",
@@ -74,9 +74,9 @@
         "name": "Ori Manga",
         "packageName": "eu.kanade.tachiyomi.extension.tr.orimanga",
         "resources": {
-          "apkUrl": "https://raw.githubusercontent.com/songulysnkmsr-blip/tempestrepo/repo/apk/tachiyomi-tr.orimanga-v1.4.4.apk",
-          "iconUrl": "https://raw.githubusercontent.com/songulysnkmsr-blip/tempestrepo/repo/icon/eu.kanade.tachiyomi.extension.tr.orimanga.png",
-          "jarUrl": "https://raw.githubusercontent.com/songulysnkmsr-blip/tempestrepo/repo/jar/tachiyomi-tr.orimanga-v1.4.4.jar"
+          "apkUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/apk/tachiyomi-tr.orimanga-v1.4.4.apk",
+          "iconUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/icon/eu.kanade.tachiyomi.extension.tr.orimanga.png",
+          "jarUrl": "https://raw.githubusercontent.com/khy1see-debug/golge-repo/repo/jar/tachiyomi-tr.orimanga-v1.4.4.jar"
         },
         "extensionLib": "1.4",
         "versionCode": "140004",
